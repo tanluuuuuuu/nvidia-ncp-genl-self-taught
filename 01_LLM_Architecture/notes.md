@@ -88,13 +88,36 @@ Autoregressive decode is often **memory-bandwidth bound**, not FLOP-bound. The b
 
 #### Why the KV cache dominates
 
-For each new token, Q is tiny (1 token × heads), but K and V grow with sequence length $n$. Cache size scales like:
+When generating token-by-token, you **recompute Q only for the new token**, but you must **reload every past K and V**. So the growing pile of stored K/V (the KV cache) is what hurts.
+
+**What you store:**
+
+1. **`seq_len`** — how many tokens are in context so far  
+2. **`num_layers`** — every transformer layer keeps its own cache  
+3. **`num_kv_heads`** — how many key/value heads (this is what MQA/GQA reduce)  
+4. **`head_dim x2`** — length of both K or V vector (e.g. 128)  
+5. **`bytes_per_number`** — e.g. FP16 = 2 bytes  
 
 $$
-\text{KV bytes} \propto n \times L \times n_{\text{kv\_heads}} \times d_{\text{head}} \times 2 \times \text{bytes/elem}
+\text{KV memory} \approx \texttt{seq\_len} \times \texttt{num\_layers} \times \texttt{num\_kv\_heads} \times \texttt{head\_dim} \times 2 \times \texttt{bytes\_per\_number}
 $$
 
-($L$ = layers; ×2 for K and V). Cutting $n_{\text{kv\_heads}}$ cuts cache size and bandwidth almost linearly → faster tokens/sec and longer context before OOM.
+**Tiny numeric example** (one request, FP16):
+
+| Factor | Value |
+| --- | --- |
+| `seq_len` | 4096 |
+| `num_layers` | 32 |
+| `num_kv_heads` | 32 (full MHA) |
+| `head_dim` | 128 |
+| `2` (K and V) | 2 |
+| `bytes_per_number` | 2 |
+
+$$
+4096 \times 32 \times 32 \times 128 \times 2 \times 2 \approx 2.1\ \text{GB}
+$$
+
+That is why MQA/GQA exist: smaller `num_kv_heads` → less cache to store and to read every decode step → faster generation and longer context before out-of-memory (OOM).
 
 #### MHA (baseline)
 
