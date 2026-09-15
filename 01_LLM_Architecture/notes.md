@@ -167,7 +167,7 @@ GQA (example g=2, h=4):
 
 ### Positional information
 
-Transformers have **no inherent order**; positions must be injected.
+Transformers have **no inherent order**; self-attention is a set operation. Without position, “dog bites man” ≈ “man bites dog”. Position must be injected somehow.
 
 | Method | Idea | Extrapolation beyond train length |
 | --- | --- | --- |
@@ -175,6 +175,8 @@ Transformers have **no inherent order**; positions must be injected.
 | Learned absolute | Embed position id | Poor / fixed max length |
 | **RoPE** | Rotate Q/K by position angle | Good |
 | **ALiBi** | Add distance bias to attention logits | Good |
+
+Absolute methods give each index a hard label (`pos=17`). Modern LLMs prefer **relative** distance (“how far is token *i* from *j*?”). **RoPE** and **ALiBi** are the two exam-relevant ways to do that.
 
 ### Layer norm & residuals
 
