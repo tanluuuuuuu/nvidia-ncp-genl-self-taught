@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+
+# uv (keep uv.lock tracked; this is just interpreter pinning noise if ever added)
+# .python-version is tracked intentionally
+
+# macOS
+.DS_Store
+
+# Editors / IDE
+.idea/
+.vscode/
